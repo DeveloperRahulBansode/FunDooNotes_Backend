@@ -21,14 +21,25 @@ namespace DataAcessLayer.Services
             _userContext = userDBContext;
         }
 
-        public Task AddUser(RegistrationModel user)
+        public async Task AddUser(RegistrationModel users)
         {
-            throw new NotImplementedException();
+            User user = new User
+            {
+                FirstName = users.FirstName,
+                LastName = users.LastName,
+                Email = users.Email,
+                Password = users.Password
+            };
+            user.Password = BCrypt.Net.BCrypt.HashPassword(users.Password);
+            _userContext.UserLogins.Add(user);
+           await _userContext.SaveChangesAsync();
         }
+            
+        
 
         public async Task<IEnumerable<User>> GetUsers()
         {
-           return await _userContext.UserLogins.ToArrayAsync();
+           return await _userContext.UserLogins.ToListAsync();
         }
 
        
