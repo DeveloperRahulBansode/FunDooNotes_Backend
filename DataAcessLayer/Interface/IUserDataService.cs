@@ -7,9 +7,9 @@ using DataAcessLayer.Entity;
 using Microsoft.AspNetCore.Http;
 using ModelLayer;
 
-namespace BusinessLayer.Interface
+namespace DataAcessLayer.Interface
 {
-    public interface IUserService
+   public  interface IUserDataService
     {
         Task<IEnumerable<User>> GetUsers();
         Task AddUser(RegistrationModel user);
@@ -19,5 +19,6 @@ namespace BusinessLayer.Interface
         Task<bool> DeleteUser(int id);
         Task<bool> ForgotPassword(string email);
         Task<bool> ResetPassword(ResetPasswordModel model);
+
     }
 }

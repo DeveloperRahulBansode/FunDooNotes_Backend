@@ -23,5 +23,9 @@ namespace DataAcessLayer.Entity
         [Required]
         [Column("Password", TypeName = "varchar(100)")]
         public string Password { get; set; }
+
+
+        public virtual ICollection<Notes> Notes { get; set; } = new List<Notes>();
     }
 }
+
