@@ -17,10 +17,10 @@ namespace DataAcessLayer.Entity
         public string Title { get; set; }
 
         [Column("Description", TypeName = "text")]
-        public string Description { get; set; } = String.Empty;
+        public string Description { get; set; }
 
         [Column("Color", TypeName = "varchar(100)")]
-        public string Color { get; set; } = String.Empty;
+        public string Color { get; set; } 
 
         [Column("IsTrash")]
         public bool IsTrash { get; set; }

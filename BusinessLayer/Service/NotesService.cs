@@ -25,6 +25,18 @@ namespace BusinessLayer.Service
             await _dataService.AddNotes(model, Id);
         }
 
+        public async Task<bool> ArchiveNote(int noteId, int userId)
+        {
+            return await _dataService.ArchiveNote(noteId, userId);
+            
+        }
+
+        public async Task<bool> ChangeNoteColor(int userId, int noteId, string newColor)
+        {
+            return  await _dataService.ChangeNoteColor(userId, noteId, newColor);
+
+        }
+
         public async Task<Notes> CreateNoteWithLabel(NotesLabelModel noteModel, int userId)
         {
             return await _dataService.CreateNoteWithLabel(noteModel, userId);
@@ -46,9 +58,15 @@ namespace BusinessLayer.Service
             return await _dataService.GetNoteById(noteId, userId);
         }
 
-        public async Task<NotesLabelModel> UpdateNoteWithLabels(int noteId, int userId, NotesLabelModel updatedNote)
+        public async Task<bool> TrashNote(int noteId, int userId)
         {
-            return await _dataService.UpdateNoteWithLabels(noteId, userId, updatedNote);
+            return await _dataService.TrashNote(noteId,userId);
+            
+        }
+
+        public async Task<NotesModel?> UpdateNote(int userId, int noteId, NotesModel updatedNote)
+        {
+            return await _dataService.UpdateNote(noteId, userId, updatedNote);
         }
     }
 }

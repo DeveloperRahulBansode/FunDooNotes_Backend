@@ -8,25 +8,21 @@ using System.Threading.Tasks;
 
 namespace ModelLayer
 {
-    public class NotesLabelModel
+    public class UpdateNodeModel
     {
         public string Title { get; set; }
 
-        public string Description { get; set; }
+        public string Description { get; set; } = String.Empty;
 
-        public string Color { get; set; } 
+        public string Color { get; set; } = String.Empty;
 
         [DefaultValue(false)]
         public bool IsTrash { get; set; }
 
         [DefaultValue(false)]
         public bool IsArchive { get; set; }
-        public int NoteId { get; set; }
-
 
         [JsonIgnore]
         public List<int> LabelId { get; set; } // Only store label IDs
-
-
     }
 }

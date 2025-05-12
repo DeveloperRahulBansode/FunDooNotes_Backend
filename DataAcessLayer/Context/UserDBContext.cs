@@ -44,10 +44,10 @@ namespace DataAcessLayer.Context
                 .OnDelete(DeleteBehavior.NoAction); // Prevent cascading delete on Notes
 
             modelBuilder.Entity<NoteLabel>()
-    .HasOne(nl => nl.Note)
-    .WithMany(n => n.NoteLabels)
-    .HasForeignKey(nl => nl.NotesId)
-    .OnDelete(DeleteBehavior.Cascade);
+            .HasOne(nl => nl.Note)
+            .WithMany(n => n.NoteLabels)
+            .HasForeignKey(nl => nl.NotesId)
+            .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<NoteLabel>()
                 .HasOne(nl => nl.Label)

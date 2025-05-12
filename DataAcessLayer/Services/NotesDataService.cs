@@ -109,6 +109,37 @@ namespace DataAcessLayer.Services
             return true;
         }
 
+        public async Task<bool> ArchiveNote(int noteId, int userId)
+        {
+            var note = await _userContext.Notes
+                .Where(n => n.NotesId == noteId && n.UserID == userId)
+                .FirstOrDefaultAsync();
+
+            if (note == null)
+                return false;
+
+            note.IsArchive = true;  
+            _userContext.Notes.Update(note);
+            await _userContext.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> TrashNote(int noteId, int userId)
+        {
+            var note = await _userContext.Notes
+                .Where(n => n.NotesId == noteId && n.UserID == userId)
+                .FirstOrDefaultAsync();
+
+            if (note == null)
+                return false;
+
+            note.IsTrash = true;  
+            _userContext.Notes.Update(note);
+            await _userContext.SaveChangesAsync();
+            return true;
+        }
+
+
 
         public async Task<List<NotesLabelModel>> GetAllNotes(int userId)
         {
@@ -154,63 +185,114 @@ namespace DataAcessLayer.Services
 
 
 
-        public async Task<NotesLabelModel> UpdateNoteWithLabels(int noteId, int userId, NotesLabelModel updatedNote)
+        //public async Task<NotesLabelModel> UpdateNoteWithLabels(int noteId, int userId, NotesLabelModel updatedNote)
+        //{
+        //    using var transaction = await _userContext.Database.BeginTransactionAsync();
+        //    try
+        //    {
+        //        var note = await _userContext.Notes
+        //            .Include(n => n.NoteLabels)
+        //            .FirstOrDefaultAsync(n => n.NotesId == noteId && n.UserID == userId);
+
+        //        if (note == null)
+        //            return null; 
+        //        note.Title = updatedNote.Title;
+        //        note.Description = updatedNote.Description;
+        //        note.Color = updatedNote.Color;
+        //        note.IsTrash = updatedNote.IsTrash;
+        //        note.IsArchive = updatedNote.IsArchive;
+
+        //        _userContext.NoteLabels.RemoveRange(note.NoteLabels);
+        //        await _userContext.SaveChangesAsync();
+
+        //        if (updatedNote.LabelId != null && updatedNote.LabelId.Any())
+        //        {
+        //            var newNoteLabels = updatedNote.LabelId.Select(labelId => new NoteLabel
+        //            {
+        //                NotesId = note.NotesId,
+        //                LabelId = labelId 
+        //            }).ToList();
+
+        //            _userContext.NoteLabels.AddRange(newNoteLabels);
+        //        }
+
+        //        await _userContext.SaveChangesAsync();
+        //        await transaction.CommitAsync();
+
+        //        return new NotesLabelModel
+        //        {
+        //            NoteId = note.NotesId,
+        //            Title = note.Title,
+        //            Description = note.Description,
+        //            Color = note.Color,
+        //            IsTrash = note.IsTrash,
+        //            IsArchive = note.IsArchive,
+        //            LabelId = _userContext.NoteLabels
+        //                .Where(nl => nl.NotesId == note.NotesId)
+        //                .Select(nl => nl.LabelId) 
+        //                .ToList()
+        //        };
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        await transaction.RollbackAsync();
+        //        throw new Exception("Error updating note with labels: " + ex.Message);
+        //    }
+        //}
+
+        public async Task<NotesModel?> UpdateNote(int userId, int noteId, NotesModel updatedNote)
         {
-            using var transaction = await _userContext.Database.BeginTransactionAsync();
-            try
+            var existingNote = await _userContext.Notes.FirstOrDefaultAsync(n => n.NotesId == noteId && n.UserID == userId);
+            if (existingNote == null) return null;
+
+            existingNote.Title = updatedNote.Title;
+            existingNote.Description = updatedNote.Description;
+            existingNote.Color = updatedNote.Color;
+            existingNote.IsTrash = updatedNote.IsTrash;
+            existingNote.IsArchive = updatedNote.IsArchive;
+
+            _userContext.Notes.Update(existingNote);
+            await _userContext.SaveChangesAsync();
+
+            return new NotesModel
             {
-                var note = await _userContext.Notes
-                    .Include(n => n.NoteLabels)
-                    .FirstOrDefaultAsync(n => n.NotesId == noteId && n.UserID == userId);
+                Title = existingNote.Title,
+                Description = existingNote.Description,
+                Color = existingNote.Color,
+                IsTrash = existingNote.IsTrash,
+                IsArchive = existingNote.IsArchive
+            };
+    
+        }
 
-                if (note == null)
-                    return null; 
-                note.Title = updatedNote.Title;
-                note.Description = updatedNote.Description;
-                note.Color = updatedNote.Color;
-                note.IsTrash = updatedNote.IsTrash;
-                note.IsArchive = updatedNote.IsArchive;
+        public async Task<bool> ChangeNoteColor(int userId, int noteId, string newColor)
+        {
+            var existingNote = await _userContext.Notes.FirstOrDefaultAsync(n => n.NotesId == noteId && n.UserID == userId);
+            if (existingNote == null) return false;
 
-                _userContext.NoteLabels.RemoveRange(note.NoteLabels);
-                await _userContext.SaveChangesAsync();
+            existingNote.Color = newColor; 
 
-                if (updatedNote.LabelId != null && updatedNote.LabelId.Any())
-                {
-                    var newNoteLabels = updatedNote.LabelId.Select(labelId => new NoteLabel
-                    {
-                        NotesId = note.NotesId,
-                        LabelId = labelId 
-                    }).ToList();
+            _userContext.Notes.Update(existingNote);
+            await _userContext.SaveChangesAsync();
 
-                    _userContext.NoteLabels.AddRange(newNoteLabels);
-                }
-
-                await _userContext.SaveChangesAsync();
-                await transaction.CommitAsync();
-
-                return new NotesLabelModel
-                {
-                    NoteId = note.NotesId,
-                    Title = note.Title,
-                    Description = note.Description,
-                    Color = note.Color,
-                    IsTrash = note.IsTrash,
-                    IsArchive = note.IsArchive,
-                    LabelId = _userContext.NoteLabels
-                        .Where(nl => nl.NotesId == note.NotesId)
-                        .Select(nl => nl.LabelId) 
-                        .ToList()
-                };
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                throw new Exception("Error updating note with labels: " + ex.Message);
-            }
+            return true;
         }
 
 
 
 
+
+
+
+
+
+
+
+
     }
+
+
+
+
 }
+

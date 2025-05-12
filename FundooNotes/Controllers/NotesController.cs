@@ -63,7 +63,7 @@ namespace FundooNotes.Controllers
 
         }
 
-        [HttpGet("{noteId}GetNoteById")]
+        [HttpGet("GetNoteById")]
         public async Task<IActionResult> GetNoteById(int noteId, int userId)
         {
             try
@@ -77,22 +77,55 @@ namespace FundooNotes.Controllers
             }
         }
 
-        [HttpPut("update-note/{noteId}")]
-        public async Task<IActionResult> UpdateNote(int noteId, int userId, [FromBody] NotesLabelModel updatedNote)
+        [HttpPut("Update")]
+        public async Task<IActionResult> UpdateNote( int noteId, NotesModel updatedNote)
         {
-            var result = await _notesService.UpdateNoteWithLabels(noteId, userId, updatedNote);
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
+            var result = await _notesService.UpdateNote(noteId, userId, updatedNote);
 
             if (result == null)
                 return NotFound(new { Message = "Note not found" });
 
-            return Ok(result); // ✅ Returns the updated note
+            return Ok(result);
         }
 
-        [HttpDelete("{noteId}/DeleteNote")]
-        public async Task<IActionResult> DeleteNote(int noteId, int userId)
+        [HttpDelete("DeleteNote")]
+        public async Task<IActionResult> DeleteNote(int noteId)
         {
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
             bool result = await _notesService.DeleteNote(noteId, userId);
             return result ? Ok("Deleted successfully") : NotFound("Note not found");
+        }
+
+        [HttpPut("Archive")]
+        public async Task<IActionResult> ArchiveNote(int noteId)
+        {
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            bool result = await _notesService.ArchiveNote(noteId, userId);
+            return result ? Ok("Archived successfully") : NotFound("Note not found");
+
+
+        }
+
+        [HttpPut("Trash")]
+        public async Task<IActionResult> TrashNote(int noteId)
+        {
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            bool result = await _notesService.TrashNote(noteId, userId);
+            return result ? Ok("Trashed successfully") : NotFound("Note not found");
+
+        }
+
+        [HttpPut("NoteColor")]
+        public async Task<IActionResult> ChangeNoteColor( int noteId, string newColor)
+        {
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            bool result = await _notesService.ChangeNoteColor(userId,noteId, newColor);
+            return result ? Ok(new { message = "Note color changed successfully" }) : NotFound("Note not found");
+
+
         }
     }
 }

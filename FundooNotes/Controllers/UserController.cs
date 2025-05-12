@@ -116,7 +116,7 @@ public class UserController : ControllerBase
         return Ok(await _userService.GetUsers());
     }
 
-    [HttpGet("{id}/GetUserById")]
+    [HttpGet("GetUserById")]
     public async Task<IActionResult> GetUserById(int id)
     {
         try
@@ -135,7 +135,7 @@ public class UserController : ControllerBase
         }
     }
 
-    [HttpDelete("{id}/DeleteUser")]
+    [HttpDelete("DeleteUser")]
     public async Task<IActionResult> DeleteUser(int id)
     {
         try
@@ -154,7 +154,7 @@ public class UserController : ControllerBase
         }
     }
 
-    [HttpPut("{id}/UpdateUser")]
+    [HttpPut("UpdateUser")]
     public async Task<IActionResult> UpdateUser(RegistrationModel user)
     {
         return Ok(await _userService.UpdateUser(user));
