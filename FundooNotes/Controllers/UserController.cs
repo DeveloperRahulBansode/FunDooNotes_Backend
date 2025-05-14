@@ -75,7 +75,6 @@ public class UserController : ControllerBase
         }
     }
 
-    [Authorize]
     [HttpPost("resetPassword")]
     public async Task<IActionResult> ResetPassword(ResetPasswordModel model)
     {
@@ -93,21 +92,7 @@ public class UserController : ControllerBase
         }
     }
 
-    //[Authorize]
-    //[HttpPost("resetPassword")]
-    //public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordModel model)
-    //{
-
-    //    if (model.NewPassword != model.ConfirmPassword)
-    //    {
-    //        return BadRequest("Passwords do not match.");
-    //    }
-
-    //    var result = await _userService.ResetPassword(HttpContext,model);
-    //    return result ? Ok("Password reset successful.") : BadRequest("Failed to reset password.");
-
-    //}
-
+   
 
     [HttpGet("GetAllUsers")]
     public async Task<ActionResult<User>> GetAllUsers()

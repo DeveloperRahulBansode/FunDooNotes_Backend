@@ -29,7 +29,7 @@ namespace DataAcessLayer.Services
         private readonly IEmailDataService _emailService;
 
 
-        public UserDataService(UserDBContext userDBContext, IConfiguration configuration,IEmailDataService emailService)
+        public UserDataService(UserDBContext userDBContext, IConfiguration configuration, IEmailDataService emailService)
         {
             _userContext = userDBContext;
             _configuration = configuration;
@@ -71,7 +71,7 @@ namespace DataAcessLayer.Services
             return true;
         }
 
-        
+
 
         public async Task<User> GetUserById(int id)
         {
@@ -91,7 +91,7 @@ namespace DataAcessLayer.Services
 
         public async Task<TokenResponse> LoginUser(LoginRequestModel model)
         {
-            var isExistUser = await _userContext.Users.FirstOrDefaultAsync(e => e.Email ==  model.Email);
+            var isExistUser = await _userContext.Users.FirstOrDefaultAsync(e => e.Email == model.Email);
             if (isExistUser != null)
             {
                 var isPasswordMatch = BCrypt.Net.BCrypt.Verify(model.Password, isExistUser.Password);
@@ -104,7 +104,7 @@ namespace DataAcessLayer.Services
                     var TokenExpiryInMin = DateTime.UtcNow.AddMinutes(Convert.ToDouble(TokenValiditiInMin + 1));
 
                     var TokenDiscriptor = new SecurityTokenDescriptor
-                    { 
+                    {
                         Subject = new ClaimsIdentity(new Claim[]
                         {
 
@@ -141,58 +141,7 @@ namespace DataAcessLayer.Services
                 throw new Exception("User Not Found");
             }
         }
-        //public async Task<bool> ForgotPassword(string email)
-        //{
-        //    var isExistUser = await _userContext.Users.FirstOrDefaultAsync(e => e.Email == email);
-        //    if (isExistUser == null)
-        //    {
-        //        throw new Exception("Email does not exist");
-        //    }
-
-        //    // Generate Token
-        //    var Issuer = _configuration["Jwt:Issuer"];
-        //    var Audience = _configuration["Jwt:Audience"];
-        //    var Key = _configuration["Jwt:EmailKey"];
-        //    var TokenExpiryInMin = DateTime.UtcNow.AddMinutes(10); // Safer expiry
-
-        //    var TokenDescriptor = new SecurityTokenDescriptor
-        //    {
-        //        Subject = new ClaimsIdentity(new Claim[]
-        //        {
-        //             new Claim(ClaimTypes.Email, isExistUser.Email),
-        //             new Claim("TokenId", Guid.NewGuid().ToString()) // Unique token ID for security
-        //        }),
-        //        Expires = TokenExpiryInMin,
-        //        Issuer = Issuer,
-        //        Audience = Audience,
-        //        SigningCredentials = new SigningCredentials(
-        //            new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Key)),
-        //            SecurityAlgorithms.HmacSha256Signature
-        //        )
-        //    };
-
-        //    var TokenHandler = new JwtSecurityTokenHandler();
-        //    var ResetToken = TokenHandler.CreateToken(TokenDescriptor);
-        //    var TokenString = TokenHandler.WriteToken(ResetToken);
-
-        //    // Encode email for URL safety
-        //    var resetLink = $"http://localhost:4200/res?token={TokenString}";
-
-
-
-        //    // Send Reset Email
-        //    var emailBody = $@"
-        //    <p>Dear {isExistUser.FirstName},</p>
-        //    <p>You requested a password reset. Click the link below to reset your password:</p>
-        //    <a href='{resetLink}'>Reset Password</a>
-        //    <p>This link will expire in 10 minutes for your security.</p>
-        //    <p>If you didn't request this, please ignore this email.</p>";
-
-        //    await _emailService.SendEmail(isExistUser.Email, "Password Reset Request", emailBody);
-
-        //    return true;
-        //}
-
+        
         public async Task<bool> ForgotPassword(string email)
         {
             var isExistUser = await _userContext.Users.FirstOrDefaultAsync(e => e.Email == email);
@@ -201,29 +150,31 @@ namespace DataAcessLayer.Services
                 throw new Exception("Email does not exist");
             }
 
-            // Generate Token
             var Issuer = _configuration["Jwt:Issuer"];
             var Audience = _configuration["Jwt:Audience"];
             var Key = _configuration["Jwt:EmailKey"];
             var TokenValiditiInMin = _configuration["Jwt:TokenValidityInMin"];
-            var TokenExpiryInMin = DateTime.UtcNow.AddMinutes(Convert.ToDouble(TokenValiditiInMin));
+            var TokenExpiryInMin = DateTime.UtcNow.AddMinutes(Convert.ToDouble(TokenValiditiInMin + 1));
 
-            var TokenDescriptor = new SecurityTokenDescriptor
+            var TokenDiscriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new Claim[]
                 {
-             new Claim(ClaimTypes.Email, isExistUser.Email),
+
+                          new Claim(ClaimTypes.NameIdentifier, isExistUser.UserID.ToString()),
+                            new Claim(ClaimTypes.Email, isExistUser.Email),
+
                 }),
                 Expires = TokenExpiryInMin,
                 Issuer = Issuer,
                 Audience = Audience,
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.ASCII.GetBytes(Key)),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Key)),
                 SecurityAlgorithms.HmacSha256Signature)
             };
-
             var TokenHandler = new JwtSecurityTokenHandler();
-            var ResetToken = TokenHandler.CreateToken(TokenDescriptor);
-            var TokenString = TokenHandler.WriteToken(ResetToken); // Corrected Here
+            var Token = TokenHandler.CreateToken(TokenDiscriptor);
+
+            var TokenString = TokenHandler.WriteToken(Token);
 
             // Send Reset Email
             var resetLink = $"http://localhost:4200/res?token={TokenString}";
@@ -232,23 +183,30 @@ namespace DataAcessLayer.Services
             return true;
         }
 
+        
+
         public async Task<bool> ResetPassword(ResetPasswordModel model)
         {
             try
             {
+                if (string.IsNullOrWhiteSpace(model.Token))
+                {
+                    throw new Exception("Reset token is missing or empty.");
+                }
+
                 if (model.NewPassword != model.ConfirmPassword)
                 {
                     throw new Exception("Passwords do not match.");
                 }
 
-                var TokenHandler = new JwtSecurityTokenHandler();
-                var Key = _configuration["Jwt:EmailKey"];
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var key = _configuration["Jwt:EmailKey"];
 
                 // Validate Token
-                var ClaimsPrincipal = TokenHandler.ValidateToken(model.Token, new TokenValidationParameters
+                var claimsPrincipal = tokenHandler.ValidateToken(model.Token, new TokenValidationParameters
                 {
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Key)),
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
                     ValidateIssuer = true,
                     ValidIssuer = _configuration["Jwt:Issuer"],
                     ValidateAudience = true,
@@ -256,28 +214,27 @@ namespace DataAcessLayer.Services
                     ClockSkew = TimeSpan.Zero
                 }, out SecurityToken validatedToken);
 
-                // Extract Email from Token
-                var email = ClaimsPrincipal.FindFirst(ClaimTypes.Email)?.Value;
+                var email = claimsPrincipal.FindFirst(ClaimTypes.Email)?.Value;
                 if (string.IsNullOrEmpty(email))
                 {
                     throw new Exception("Invalid token.");
                 }
 
-                // Check if user exists
                 var isExistUser = await _userContext.Users.FirstOrDefaultAsync(e => e.Email == email);
                 if (isExistUser == null)
                 {
                     throw new Exception("User not found.");
                 }
 
-                // Hash the new password securely
+                // Hash and update password, then mark entity as modified
                 isExistUser.Password = BCrypt.Net.BCrypt.HashPassword(model.NewPassword);
+                _userContext.Entry(isExistUser).State = EntityState.Modified;
                 await _userContext.SaveChangesAsync();
-
-                // Send Confirmation Email
-                await _emailService.SendEmail(isExistUser.Email, "Password Reset Successful", "Your password has been successfully reset.");
-
                 return true;
+            }
+            catch (ArgumentException)
+            {
+                throw new Exception("Reset token is not in a valid format.");
             }
             catch (SecurityTokenException)
             {
@@ -307,69 +264,7 @@ namespace DataAcessLayer.Services
             await _userContext.SaveChangesAsync();
             return user;
         }
-
-        //public async Task<bool> ResetPassword(HttpContext httpContext, ResetPasswordModel model)
-        //{
-        //    // Extract token from Authorization Header
-        //    var authHeader = httpContext.Request.Headers["Authorization"].ToString();
-        //    if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
-        //    {
-        //        throw new UnauthorizedAccessException("Authorization token is missing.");
-        //    }
-        //    if (model.NewPassword != model.ConfirmPassword)
-        //    {
-        //        throw new Exception("Passwords do not match.");
-        //    }
-
-        //    var token = authHeader.Replace("Bearer ", "").Trim();
-        //    var tokenHandler = new JwtSecurityTokenHandler();
-
-        //    try
-        //    {
-        //        // Validate Token
-        //        var claimsPrincipal = tokenHandler.ValidateToken(token, new TokenValidationParameters
-        //        {
-        //            ValidateIssuerSigningKey = true,
-        //            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:EmailKey"])),
-        //            ValidateIssuer = true,
-        //            ValidIssuer = _configuration["Jwt:Issuer"],
-        //            ValidateAudience = true,
-        //            ValidAudience = _configuration["Jwt:Audience"],
-        //            ClockSkew = TimeSpan.Zero
-        //        }, out SecurityToken validatedToken);
-
-        //        // Extract Email from Token
-        //        var email = claimsPrincipal.FindFirst(ClaimTypes.Email)?.Value;
-        //        if (string.IsNullOrEmpty(email))
-        //        {
-        //            throw new Exception("Invalid token.");
-        //        }
-
-        //        // Check if user exists
-        //        var isExistUser = await _userContext.Users.FirstOrDefaultAsync(e => e.Email == email);
-        //        if (isExistUser == null)
-        //        {
-        //            throw new Exception("User not found.");
-        //        }
-
-        //        // Hash the new password securely
-        //        isExistUser.Password = BCrypt.Net.BCrypt.HashPassword(model.NewPassword);
-        //        await _userContext.SaveChangesAsync();
-
-        //        // Send Confirmation Email
-        //        await _emailService.SendEmail(isExistUser.Email, "Password Reset Successful", "Your password has been successfully reset.");
-
-        //        return true;
-        //    }
-        //    catch (SecurityTokenException)
-        //    {
-        //        throw new Exception("Invalid or expired token.");
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        throw new Exception($"An error occurred: {ex.Message}");
-        //    }
-        //}
-
     }
 }
+
+       
